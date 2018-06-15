@@ -2,7 +2,14 @@ import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-// Create mock API array
+const DEFAULT_QUERY = 'redux';
+
+const PATH_BASE = 'https://hn.algolia.com/api/v1';
+const PATH_SEARCH = '/search';
+const PARAM_SEARCH = 'query=';
+
+const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`;
+
 const list = [
   {
     title: 'React',
@@ -38,37 +45,34 @@ const list = [
   },
 ];
 
-// Test const
-const welcome = 'Welcome to the Road to learn React practice by Raph Sutti 2018';
-const answer = 42;
-
-// function isSearched(searchTerm) {
-//   return function(item) {
-//     return item.title.toLowerCase().includes(searchTerm.toLowerCase());
-//   }
-// }
 const isSearched = searchTerm => item => item.title.toLowerCase().includes(searchTerm.toLowerCase());
 
 class App extends Component {
-  // Called when component initialised
   constructor(props) {
-    // Sets this.props in constructor
     super(props);
-    // Set initial state 
     this.state = {
-      list,
-      welcome,
-      answer,
-      searchTerm: '',       
+      result: null,
+      searchTerm: DEFAULT_QUERY,       
     };
 
-    // bind this method to constructor
-    // Class method dont automatically bind this to class instance
+    this.setSearchTopStories = this.setSearchTopStories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
   }
 
-  // Business logic should be outside constructor
+  setSearchTopStories(result) {
+    this.setState({ result })
+  }
+  
+  // fetch data after component mount
+  componentDidMount() {
+    const { searchTerm } = this.state;
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
+      .then(response => response.json())
+      .then(result => this.setSearchTopStories(result))
+      .catch(error => error);
+  }
+
   onSearchChange(event) {
     this.setState({ searchTerm: event.target.value });
   }
@@ -83,7 +87,10 @@ class App extends Component {
   }
 
   render() {  
-    const { welcome, answer, searchTerm, list } = this.state;
+    const { searchTerm, result } = this.state;
+
+    if (!result) { return null; }
+
     return (
       <div className="App page">
         <header className="App-header">
@@ -91,9 +98,6 @@ class App extends Component {
           <h1 className="App-title">My React Page</h1>
         </header>
 
-        <h2>{welcome}</h2>
-        <p>The answer to everything is {answer}</p>
-        
         <div className="interactions">
           <Search 
             value={searchTerm}
@@ -103,7 +107,7 @@ class App extends Component {
           </Search>
         </div>
         <Table 
-          list={list}
+          list={result.hits}
           pattern={searchTerm}
           onDismiss={this.onDismiss}
         />
